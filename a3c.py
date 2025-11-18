@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -45,14 +45,14 @@ def train(global_model, rank):
 
     for n_epi in range(max_train_ep):
         done = False
-        s = env.reset()
+        s, _ = env.reset()
         while not done:
             s_lst, a_lst, r_lst = [], [], []
             for t in range(update_interval):
                 prob = local_model.pi(torch.from_numpy(s).float())
                 m = Categorical(prob)
                 a = m.sample().item()
-                s_prime, r, done, info = env.step(a)
+                s_prime, r, done, truncated, info = env.step(a)
 
                 s_lst.append(s)
                 a_lst.append([a])
@@ -97,11 +97,11 @@ def test(global_model):
 
     for n_epi in range(max_test_ep):
         done = False
-        s = env.reset()
+        s, _ = env.reset()
         while not done:
             prob = global_model.pi(torch.from_numpy(s).float())
             a = Categorical(prob).sample().item()
-            s_prime, r, done, info = env.step(a)
+            s_prime, r, done, truncated, info = env.step(a)
             s = s_prime
             score += r
 

@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import random
 import collections
 import torch
