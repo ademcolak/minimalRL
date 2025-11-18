@@ -158,7 +158,7 @@ def load_checkpoint(q, q_target, optimizer, memory, load_buffer=False):
 
     if os.path.exists(checkpoint_path):
         print(f"📂 Loading checkpoint: {checkpoint_path}")
-        checkpoint = torch.load(checkpoint_path)
+        checkpoint = torch.load(checkpoint_path, weights_only=False)
 
         q.load_state_dict(checkpoint['model_state_dict'])
         q_target.load_state_dict(checkpoint['target_state_dict'])
@@ -181,7 +181,7 @@ def load_checkpoint(q, q_target, optimizer, memory, load_buffer=False):
         print("🆕 No checkpoint found. Starting from scratch...")
         return 0, 0.0
 
-def main():
+def main(render=False):
     # Create directories
     os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -189,7 +189,12 @@ def main():
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer = SummaryWriter(f'runs/DQN_CartPole_{timestamp}')
 
-    env = gym.make('CartPole-v1')
+    # Create environment with optional rendering
+    if render:
+        env = gym.make('CartPole-v1', render_mode='human')
+        print("🎮 Rendering enabled - you will see the agent play!")
+    else:
+        env = gym.make('CartPole-v1')
     q = Qnet()
     q_target = Qnet()
     q_target.load_state_dict(q.state_dict())
@@ -199,9 +204,9 @@ def main():
     # Load checkpoint if exists
     start_episode, best_score = load_checkpoint(q, q_target, optimizer, memory, load_buffer=False)
 
-    print_interval = 20
-    score = 0.0
-    scores_window = collections.deque(maxlen=100)  # Last 100 scores
+    print_interval = 5  # Changed from 20 to 5 for faster feedback
+    score = 0.0  # Always reset score when starting/resuming training
+    scores_window = collections.deque(maxlen=200)  # Last 100 scores
 
     print(f"\n{'='*60}")
     print(f"🚀 Starting DQN Training on CartPole-v1")
@@ -213,6 +218,7 @@ def main():
     print(f"Batch Size: {batch_size}")
     print(f"TensorBoard: runs/DQN_CartPole_{timestamp}")
     print(f"{'='*60}\n")
+    print("Training started... (output every 5 episodes)")
 
     for n_epi in range(start_episode, 2000):  # Your reduced episode count
         epsilon = max(0.01, 0.08 - 0.01*(n_epi/200)) #Linear annealing from 8% to 1%
@@ -228,7 +234,8 @@ def main():
             s = s_prime
 
             episode_score += r
-            if done:
+            # Episode ends if either done OR truncated (time limit reached)
+            if done or truncated:
                 break
 
         score += episode_score
@@ -285,4 +292,11 @@ def main():
     writer.close()
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Train DQN on CartPole-v1')
+    parser.add_argument('--render', action='store_true',
+                        help='Enable rendering to watch training (slower)')
+
+    args = parser.parse_args()
+    main(render=args.render)

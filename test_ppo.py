@@ -1,5 +1,5 @@
 """
-Test script for trained DQN model
+Test script for trained PPO model
 Loads the best saved model and runs test episodes
 """
 
@@ -8,32 +8,36 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.distributions import Categorical
 import os
 
 # Same network architecture as training
-class Qnet(nn.Module):
+class PPO(nn.Module):
     def __init__(self):
-        super(Qnet, self).__init__()
-        self.fc1 = nn.Linear(4, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 2)
+        super(PPO, self).__init__()
+        self.data = []
 
-    def forward(self, x):
+        self.fc1   = nn.Linear(4,256)
+        self.fc_pi = nn.Linear(256,2)
+        self.fc_v  = nn.Linear(256,1)
+
+    def pi(self, x, softmax_dim = 0):
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+        x = self.fc_pi(x)
+        prob = F.softmax(x, dim=softmax_dim)
+        return prob
 
-    def sample_action(self, obs, epsilon=0.0):
-        """Sample action (epsilon=0 for greedy policy)"""
-        out = self.forward(obs)
-        return out.argmax().item()
+    def sample_action(self, obs):
+        """Sample action from policy"""
+        prob = self.pi(obs)
+        m = Categorical(prob)
+        return m.sample().item()
 
-def test_model(model_path='checkpoints/dqn_cartpole_best.pth',
+def test_model(model_path='checkpoints/ppo_cartpole_best.pth',
                num_episodes=10,
                render=False):
     """
-    Test a trained DQN model
+    Test a trained PPO model
 
     Args:
         model_path: Path to saved model checkpoint
@@ -44,19 +48,19 @@ def test_model(model_path='checkpoints/dqn_cartpole_best.pth',
     # Check if model exists
     if not os.path.exists(model_path):
         print(f"❌ Model not found: {model_path}")
-        print("   Train the model first by running: python3 dqn.py")
+        print("   Train the model first by running: python3 ppo.py")
         return
 
     # Load model
     print(f"📂 Loading model: {model_path}")
-    q = Qnet()
+    model = PPO()
     checkpoint = torch.load(model_path, weights_only=False)
-    q.load_state_dict(checkpoint['model_state_dict'])
-    q.eval()  # Set to evaluation mode
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()  # Set to evaluation mode
 
     print(f"✅ Model loaded!")
-    print(f"   Episode: {checkpoint['episode']}")
-    print(f"   Best Score: {checkpoint['best_score']:.1f}")
+    print(f"   Episode: {checkpoint.get('episode', 'N/A')}")
+    print(f"   Best Score: {checkpoint.get('best_score', 'N/A'):.1f}")
     print(f"\n{'='*60}")
     print(f"🎮 Running {num_episodes} test episodes...")
     print(f"{'='*60}\n")
@@ -76,9 +80,9 @@ def test_model(model_path='checkpoints/dqn_cartpole_best.pth',
         steps = 0
 
         while not done:
-            # Greedy action selection (no exploration)
+            # Sample action from policy (no exploration)
             with torch.no_grad():
-                a = q.sample_action(torch.from_numpy(s).float(), epsilon=0.0)
+                a = model.sample_action(torch.from_numpy(s).float())
 
             s, r, done, truncated, info = env.step(a)
             score += r
@@ -110,8 +114,8 @@ def test_model(model_path='checkpoints/dqn_cartpole_best.pth',
 
 def compare_models():
     """Compare best model vs latest model"""
-    best_path = 'checkpoints/dqn_cartpole_best.pth'
-    latest_path = 'checkpoints/dqn_cartpole_latest.pth'
+    best_path = 'checkpoints/ppo_cartpole_best.pth'
+    latest_path = 'checkpoints/ppo_cartpole_latest.pth'
 
     print("\n🔍 Comparing Models...")
     print(f"{'='*60}\n")
@@ -127,8 +131,8 @@ def compare_models():
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description='Test trained DQN model')
-    parser.add_argument('--model', type=str, default='checkpoints/dqn_cartpole_best.pth',
+    parser = argparse.ArgumentParser(description='Test trained PPO model')
+    parser.add_argument('--model', type=str, default='checkpoints/ppo_cartpole_best.pth',
                         help='Path to model checkpoint')
     parser.add_argument('--episodes', type=int, default=10,
                         help='Number of test episodes')
