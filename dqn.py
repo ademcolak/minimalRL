@@ -271,9 +271,16 @@ def main(render=False):
             save_checkpoint(q, q_target, optimizer, memory, n_epi, best_score, avg_score, scores_window, save_buffer=False)
 
             # Save best model
-            if avg_score > best_score:
-                best_score = avg_score
-                save_best_model(q, q_target, optimizer, n_epi, best_score)
+            # Use avg_100 for more stable comparison (only after 100 episodes)
+            if len(scores_window) >= 100:
+                if avg_100 > best_score:
+                    best_score = avg_100
+                    save_best_model(q, q_target, optimizer, n_epi, best_score)
+            else:
+                # Before 100 episodes, use avg_score
+                if avg_score > best_score:
+                    best_score = avg_score
+                    save_best_model(q, q_target, optimizer, n_epi, best_score)
 
             score = 0.0
 
