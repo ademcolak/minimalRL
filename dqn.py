@@ -112,7 +112,7 @@ def train(q, q_target, memory, optimizer, writer=None, step=0):
 
     return total_loss / 10
 
-def save_checkpoint(q, q_target, optimizer, memory, episode, best_score, avg_score, save_buffer=False):
+def save_checkpoint(q, q_target, optimizer, memory, episode, best_score, avg_score, scores_window, save_buffer=False):
     """Save model checkpoint"""
     os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -123,6 +123,7 @@ def save_checkpoint(q, q_target, optimizer, memory, episode, best_score, avg_sco
         'optimizer_state_dict': optimizer.state_dict(),
         'best_score': best_score,
         'avg_score': avg_score,
+        'scores_window': list(scores_window),  # Save last 100 scores
     }
 
     # Save latest checkpoint
@@ -167,19 +168,24 @@ def load_checkpoint(q, q_target, optimizer, memory, load_buffer=False):
         start_episode = checkpoint['episode']
         best_score = checkpoint['best_score']
 
+        # Load scores window if available (for backward compatibility)
+        scores_window = checkpoint.get('scores_window', [])
+        scores_window = collections.deque(scores_window, maxlen=100)
+
         print(f"✅ Checkpoint loaded!")
         print(f"   Episode: {start_episode}")
         print(f"   Best Score: {best_score:.1f}")
+        print(f"   Scores Window Size: {len(scores_window)}")
 
         # Load replay buffer if requested
         if load_buffer:
             buffer_path = os.path.join(SAVE_DIR, f'{MODEL_NAME}_buffer.pkl')
             memory.load(buffer_path)
 
-        return start_episode, best_score
+        return start_episode, best_score, scores_window
     else:
         print("🆕 No checkpoint found. Starting from scratch...")
-        return 0, 0.0
+        return 0, 0.0, collections.deque(maxlen=100)
 
 def main(render=False):
     # Create directories
@@ -202,11 +208,10 @@ def main(render=False):
     optimizer = optim.Adam(q.parameters(), lr=learning_rate)
 
     # Load checkpoint if exists
-    start_episode, best_score = load_checkpoint(q, q_target, optimizer, memory, load_buffer=False)
+    start_episode, best_score, scores_window = load_checkpoint(q, q_target, optimizer, memory, load_buffer=False)
 
     print_interval = 5  # Changed from 20 to 5 for faster feedback
     score = 0.0  # Always reset score when starting/resuming training
-    scores_window = collections.deque(maxlen=200)  # Last 100 scores
 
     print(f"\n{'='*60}")
     print(f"🚀 Starting DQN Training on CartPole-v1")
@@ -263,7 +268,7 @@ def main(render=False):
                 n_epi, avg_score, avg_100, memory.size(), epsilon*100, avg_loss))
 
             # Save checkpoint
-            save_checkpoint(q, q_target, optimizer, memory, n_epi, best_score, avg_score, save_buffer=False)
+            save_checkpoint(q, q_target, optimizer, memory, n_epi, best_score, avg_score, scores_window, save_buffer=False)
 
             # Save best model
             if avg_score > best_score:
@@ -280,7 +285,7 @@ def main(render=False):
             break
 
     # Final save
-    final_path = save_checkpoint(q, q_target, optimizer, memory, n_epi, best_score, score/print_interval, save_buffer=True)
+    final_path = save_checkpoint(q, q_target, optimizer, memory, n_epi, best_score, score/print_interval, scores_window, save_buffer=True)
     print(f"\n{'='*60}")
     print(f"✅ Training completed!")
     print(f"📊 Best Score: {best_score:.1f}")

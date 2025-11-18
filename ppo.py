@@ -106,7 +106,7 @@ class PPO(nn.Module):
 
         return total_loss / K_epoch, total_policy_loss / K_epoch, total_value_loss / K_epoch
         
-def save_checkpoint(model, episode, best_score, avg_score):
+def save_checkpoint(model, episode, best_score, avg_score, scores_window):
     """Save model checkpoint"""
     os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -116,6 +116,7 @@ def save_checkpoint(model, episode, best_score, avg_score):
         'optimizer_state_dict': model.optimizer.state_dict(),
         'best_score': best_score,
         'avg_score': avg_score,
+        'scores_window': list(scores_window),  # Save last 100 scores
     }
 
     checkpoint_path = os.path.join(SAVE_DIR, f'{MODEL_NAME}_latest.pth')
@@ -150,14 +151,19 @@ def load_checkpoint(model):
         start_episode = checkpoint['episode']
         best_score = checkpoint['best_score']
 
+        # Load scores window if available (for backward compatibility)
+        scores_window = checkpoint.get('scores_window', [])
+        scores_window = collections.deque(scores_window, maxlen=100)
+
         print(f"✅ Checkpoint loaded!")
         print(f"   Episode: {start_episode}")
         print(f"   Best Score: {best_score:.1f}")
+        print(f"   Scores Window Size: {len(scores_window)}")
 
-        return start_episode, best_score
+        return start_episode, best_score, scores_window
     else:
         print("🆕 No checkpoint found. Starting from scratch...")
-        return 0, 0.0
+        return 0, 0.0, collections.deque(maxlen=100)
 
 def main():
     # Create directories
@@ -171,11 +177,10 @@ def main():
     model = PPO()
 
     # Load checkpoint if exists
-    start_episode, best_score = load_checkpoint(model)
+    start_episode, best_score, scores_window = load_checkpoint(model)
 
     score = 0.0
     print_interval = 5  # Changed from 20 for faster feedback
-    scores_window = collections.deque(maxlen=100)
 
     print(f"\n{'='*60}")
     print(f"🚀 Starting PPO Training on CartPole-v1")
@@ -230,7 +235,7 @@ def main():
                 n_epi, avg_score, avg_100, avg_loss))
 
             # Save checkpoint
-            save_checkpoint(model, n_epi, best_score, avg_score)
+            save_checkpoint(model, n_epi, best_score, avg_score, scores_window)
 
             # Save best model
             if avg_score > best_score:
@@ -247,7 +252,7 @@ def main():
             break
 
     # Final save
-    final_path = save_checkpoint(model, n_epi, best_score, score/print_interval)
+    final_path = save_checkpoint(model, n_epi, best_score, score/print_interval, scores_window)
     print(f"\n{'='*60}")
     print(f"✅ Training completed!")
     print(f"📊 Best Score: {best_score:.1f}")
