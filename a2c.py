@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -41,12 +41,12 @@ def worker(worker_id, master_end, worker_end):
     while True:
         cmd, data = worker_end.recv()
         if cmd == 'step':
-            ob, reward, done, info = env.step(data)
+            ob, reward, done, truncated, info = env.step(data)
             if done:
-                ob = env.reset()
+                ob, _ = env.reset()
             worker_end.send((ob, reward, done, info))
         elif cmd == 'reset':
-            ob = env.reset()
+            ob, _ = env.reset()
             worker_end.send(ob)
         elif cmd == 'reset_task':
             ob = env.reset_task()
@@ -118,11 +118,11 @@ def test(step_idx, model):
     num_test = 10
 
     for _ in range(num_test):
-        s = env.reset()
+        s, _ = env.reset()
         while not done:
             prob = model.pi(torch.from_numpy(s).float(), softmax_dim=0)
             a = Categorical(prob).sample().numpy()
-            s_prime, r, done, info = env.step(a)
+            s_prime, r, done, truncated, info = env.step(a)
             s = s_prime
             score += r
         done = False

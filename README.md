@@ -28,8 +28,16 @@ Implementations of basic RL algorithms with minimal lines of codes! (PyTorch bas
 
 
 ## Dependencies
-1. PyTorch
-2. OpenAI GYM ( > 0.26.2 IMPORTANT!! No longer support for the previous versions)
+1. PyTorch (>= 2.0.0)
+2. Gymnasium (>= 0.28.0) - Modern fork of OpenAI Gym
+3. NumPy (>= 1.24.0)
+
+Install all dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+**Note:** This project uses Gymnasium (the maintained successor to OpenAI Gym). If you prefer the legacy OpenAI Gym, use version >= 0.26.2.
 
 ## Usage
 ```bash

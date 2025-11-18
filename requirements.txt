@@ -1,0 +1,10 @@
+# MinimalRL PyTorch Dependencies
+
+# Deep Learning
+torch>=2.0.0
+
+# Reinforcement Learning Environment
+gymnasium>=0.28.0
+
+# Numerical Computing
+numpy>=1.24.0
