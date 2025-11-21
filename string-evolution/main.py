@@ -42,7 +42,8 @@ def main():
     ga.create_initial_population()
 
     # Ana döngü
-    while not ga.is_target_found():
+    max_generations = 10000
+    while ga.generation < max_generations:
         # Yeni nesil
         ga.evolve()
 
@@ -54,9 +55,16 @@ def main():
         # Biraz bekle (animasyon gibi)
         time.sleep(0.05)
 
-        # Maksimum nesil kontrolü (sonsuz döngüyü önle)
-        if ga.generation > 10000:
-            print("⚠️  10000 nesil aşıldı, durduruluyor...")
+        # Hedef bulundu mu?
+        if ga.is_target_found():
+            print()
+            print("🎉 Target found!")
+            time.sleep(1)  # 1 saniye bekle, son durumu göster
+            break
+
+        # Maksimum nesil kontrolü
+        if ga.generation >= max_generations:
+            print(f"⚠️  {max_generations} nesil aşıldı, durduruluyor...")
             break
 
     # Başarı!
