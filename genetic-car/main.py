@@ -46,6 +46,7 @@ class Trainer:
         # Durum
         self.running = True
         self.paused = False
+        self.auto_mode = False  # Otomatik nesil geçişi
         self.generation_time = 0
         self.max_generation_time = 600  # 10 saniye (60 fps * 10)
 
@@ -74,6 +75,13 @@ class Trainer:
                 self.paused = not self.paused
                 print("⏸️  Durakladı" if self.paused else "▶️  Devam ediyor")
 
+            if events['auto_toggle']:
+                self.auto_mode = not self.auto_mode
+                status = "🤖 AUTO MODE: AÇIK" if self.auto_mode else "👤 MANUEL MODE"
+                print(status)
+                if self.auto_mode:
+                    print("   Nesiller otomatik geçecek, izle ve keyfini çıkar! 🍿")
+
             if events['save']:
                 self.save_checkpoint()
 
@@ -85,7 +93,7 @@ class Trainer:
 
             # Eğer durakladıysa sadece çiz
             if self.paused:
-                self.visualizer.render(self.track, self.population, self.ga)
+                self.visualizer.render(self.track, self.population, self.ga, self.auto_mode)
                 self.visualizer.tick(60)
                 continue
 
@@ -93,7 +101,7 @@ class Trainer:
             self.update_simulation()
 
             # Render
-            self.visualizer.render(self.track, self.population, self.ga)
+            self.visualizer.render(self.track, self.population, self.ga, self.auto_mode)
             self.visualizer.tick(60)
 
         # Temizlik
@@ -112,8 +120,16 @@ class Trainer:
         # Tüm arabalar öldü mü veya süre doldu mu?
         alive_count = sum(1 for car in self.population if car.alive)
 
-        if alive_count == 0 or self.generation_time >= self.max_generation_time:
-            self.next_generation()
+        # Auto mode: Hemen yeni nesle geç
+        # Manuel mode: Biraz bekle (nesli izleyebilsin)
+        if self.auto_mode:
+            # Auto mode: Tüm arabalar ölünce direkt geç
+            if alive_count == 0:
+                self.next_generation()
+        else:
+            # Manuel mode: Normal davranış
+            if alive_count == 0 or self.generation_time >= self.max_generation_time:
+                self.next_generation()
 
     def next_generation(self):
         """Yeni nesle geç"""
@@ -297,6 +313,7 @@ def main():
     print("▶️  Simülasyon başlıyor...")
     print()
     print("Kontroller:")
+    print("  A - Auto mode (otomatik nesil geçişi)")
     print("  S - Save checkpoint")
     print("  L - Load checkpoint")
     print("  R - Reset (sıfırdan başla)")

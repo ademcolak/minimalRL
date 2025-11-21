@@ -86,12 +86,14 @@ python main.py
 
 ### Kontroller
 
+- **A**: Auto mode (otomatik nesil geçişi - izle ve keyfini çıkar! 🍿)
 - **S**: Checkpoint kaydet
 - **L**: Checkpoint yükle
 - **R**: Sıfırdan başla
 - **SPACE**: Duraklat/Devam
-- **↑/↓**: Simülasyon hızını ayarla
 - **Q**: Çık
+
+**💡 İpucu:** Auto mode'u aç, otur ve evrimi izle! Nesiller otomatik geçecek.
 
 ### Checkpoint Sistemi
 
