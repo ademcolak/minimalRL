@@ -12,12 +12,12 @@ from visualizer import Visualizer
 def main():
     """Ana fonksiyon"""
     # Hedef string
-    target = "HELLO WORLD"
+    target = "Bu Bir Deneme Yazısı"
 
     # Parametreler
-    population_size = 200
-    mutation_rate = 0.01  # %1
-    elitism_count = 1
+    population_size = 400
+    mutation_rate = 0.02  # %2
+    elitism_count = 2
 
     # GA ve Visualizer oluştur
     ga = GeneticAlgorithm(
@@ -40,6 +40,7 @@ def main():
 
     # İlk popülasyon
     ga.create_initial_population()
+    ga.calculate_all_fitness()  # İlk fitness'leri hesapla
 
     # Ana döngü
     while not ga.is_target_found():

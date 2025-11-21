@@ -127,6 +127,9 @@ class GeneticAlgorithm:
         self.population = new_population
         self.generation += 1
 
+        # Yeni neslin fitness'lerini hesapla
+        self.calculate_all_fitness()
+
     def is_target_found(self):
         """Hedef bulundu mu?"""
         best = self.get_best_individual()

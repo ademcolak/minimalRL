@@ -14,8 +14,8 @@ import string
 class Individual:
     """Genetic Algorithm'da tek bir birey"""
 
-    # Kullanılabilir karakterler (A-Z ve boşluk)
-    CHARS = string.ascii_uppercase + ' '
+    # Kullanılabilir karakterler (A-Z, a-z, Türkçe karakterler ve boşluk)
+    CHARS = string.ascii_uppercase + string.ascii_lowercase + 'ÇçĞğİıÖöŞşÜü' + ' '
 
     def __init__(self, target_length=11, dna=None):
         """
