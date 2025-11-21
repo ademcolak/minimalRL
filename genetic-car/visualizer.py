@@ -250,15 +250,38 @@ class Visualizer:
             self.screen.blit(label, (x_offset, stats_y + 20))
             x_offset += 200
 
+    def draw_auto_mode_indicator(self):
+        """
+        Auto mode göstergesini çiz (sağ üst köşe)
+        """
+        indicator_x = self.nn_panel_x + 20
+        indicator_y = 20
+
+        # Arka plan kutusu
+        box_width = self.nn_panel_width - 40
+        box_height = 60
+        pygame.draw.rect(self.screen, (50, 150, 50),
+                        (indicator_x, indicator_y, box_width, box_height))
+        pygame.draw.rect(self.screen, (100, 255, 100),
+                        (indicator_x, indicator_y, box_width, box_height), 3)
+
+        # Metin
+        text1 = self.font_medium.render("🤖 AUTO MODE", True, (255, 255, 255))
+        text2 = self.font_small.render("Otomatik nesil geçişi aktif", True, (200, 255, 200))
+
+        self.screen.blit(text1, (indicator_x + 10, indicator_y + 10))
+        self.screen.blit(text2, (indicator_x + 10, indicator_y + 35))
+
     def draw_controls(self):
         """
         Kontrol tuşlarını göster (sağ panel altı)
         """
-        controls_y = self.height - 150
+        controls_y = self.height - 170
         controls_x = self.nn_panel_x + 20
 
         controls = [
             "Controls:",
+            "A - Auto mode",
             "S - Save",
             "L - Load",
             "R - Reset",
@@ -270,7 +293,7 @@ class Visualizer:
             label = self.font_small.render(text, True, self.colors['text'])
             self.screen.blit(label, (controls_x, controls_y + i * 20))
 
-    def render(self, track, cars, ga, show_sensors=True):
+    def render(self, track, cars, ga, auto_mode=False, show_sensors=True):
         """
         Tam ekranı render et
 
@@ -278,6 +301,7 @@ class Visualizer:
             track: Track objesi
             cars: Car listesi
             ga: GeneticAlgorithm objesi
+            auto_mode: Otomatik mod açık mı?
             show_sensors: Sensörleri göster mi?
         """
         # Arka plan
@@ -304,6 +328,10 @@ class Visualizer:
             ga.get_avg_fitness()
         )
 
+        # Auto mode göstergesi
+        if auto_mode:
+            self.draw_auto_mode_indicator()
+
         # Kontroller
         self.draw_controls()
 
@@ -320,6 +348,7 @@ class Visualizer:
         events = {
             'quit': False,
             'pause': False,
+            'auto_toggle': False,
             'save': False,
             'load': False,
             'reset': False
@@ -334,6 +363,8 @@ class Visualizer:
                     events['quit'] = True
                 elif event.key == pygame.K_SPACE:
                     events['pause'] = True
+                elif event.key == pygame.K_a:
+                    events['auto_toggle'] = True
                 elif event.key == pygame.K_s:
                     events['save'] = True
                 elif event.key == pygame.K_l:
